@@ -13,8 +13,10 @@ from crm.forms import saleForm
 @csrf_exempt
 def saleInicia(request):
     if request.method == "POST":
-        client=Client.objects.get(name='mostrador')
-        sale=Sale.objects.create(client=client,)
+        call=json.loads(request.body)
+        clienteId=int(call['id'])
+        cliente=Client.objects.get(id=clienteId)
+        sale=Sale.objects.create(client=cliente,)
         sale.save()
     return JsonResponse('Venta Registrada',safe=False)
 

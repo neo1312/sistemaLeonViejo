@@ -16,6 +16,7 @@ class Client(models.Model):
     address = models.CharField(max_length=150, null=True, blank=True, verbose_name='Address')
     phoneNumber = models.CharField(max_length=150, verbose_name='Phone')
     tipo= models.CharField(choices=tipo,max_length=150, verbose_name='Type',default='menudeo')
+    monedero=models.DecimalField(max_digits=9,decimal_places=2,default=0)
     #utility fields
     date_created = models.DateTimeField(blank=True, null=True)
     last_updated = models.DateTimeField(blank=True, null=True)
@@ -137,6 +138,10 @@ def OrderItemSignal(sender,instance,**kwargs):
     cantidad= float(producto.stock)-float(instance.quantity)
     producto.stock=cantidad
     producto.save()
+    clientId=instance.sale.client.id
+    cliente=Client.objects.get(id=clientId)
+    cliente.monedero=instance.get_total*0.035
+    cliente.save()
 
 @receiver(post_delete, sender=saleItem)
 def OrderItemSignal(sender,instance,**kwargs):
