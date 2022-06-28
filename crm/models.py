@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.db.models.signals import post_save,post_delete
+from django.db.models.signals import post_save,post_delete,pre_save
 from django.dispatch import receiver
 from im.models import Product
 import math
@@ -41,9 +41,11 @@ class Sale(models.Model):
             ('mayoreo','mayoreo')
             ]
     #basic fields
+    #basic fields
     id=models.AutoField(primary_key=True,verbose_name='id')
     client= models.ForeignKey(Client, on_delete=models.SET_NULL, null=True,default='mostrador')
     tipo=models.CharField(choices=tipos,max_length=100,default='menudeo')
+    monedero=models.BooleanField(default=False)
 
     #utility fields
     date_created= models.DateTimeField(blank=True, null=True)
@@ -81,6 +83,7 @@ class saleItem(models.Model):
     quantity=models.CharField(max_length=50,default=0)
     cost=models.CharField(null=True,blank=True,max_length=50)
     margen=models.CharField(max_length=100,verbose_name='margen',default=0)
+    monedero=models.DecimalField(max_digits=9,decimal_places=2,default=0)
 
     #utility fields
     date_created = models.DateTimeField(blank=True, null=True)
@@ -140,8 +143,20 @@ def OrderItemSignal(sender,instance,**kwargs):
     producto.save()
     clientId=instance.sale.client.id
     cliente=Client.objects.get(id=clientId)
-    cliente.monedero=instance.get_total*0.035
-    cliente.save()
+    if instance.sale.monedero==False:
+        cliente.monedero=instance.get_total*0.035+float(cliente.monedero)
+        cliente.save()
+    else:
+        if instance.get_total >= instance.sale.client.monedero:
+            cliente.monedero=0
+            cliente.save()
+        else:
+            cliente.monedero=float(cliente.monedero)-instance.get_total
+            cliente.save()
+
+@receiver(pre_save, sender=saleItem)
+def OrderItemSignal(sender,instance,**kwargs):
+    pass
 
 @receiver(post_delete, sender=saleItem)
 def OrderItemSignal(sender,instance,**kwargs):
@@ -150,12 +165,17 @@ def OrderItemSignal(sender,instance,**kwargs):
     cantidad= float(producto.stock)+float(instance.quantity)
     producto.stock=cantidad
     producto.save()
+    clientId=instance.sale.client.id
+    cliente=Client.objects.get(id=clientId)
+    cliente.monedero=float(cliente.monedero)-instance.get_total*0.035
+    cliente.save()
 
 class Devolution(models.Model):
     
     #basic fields
     id=models.AutoField(primary_key=True,verbose_name='id')
     client= models.ForeignKey(Client, on_delete=models.SET_NULL, null=True,default='mostrador')
+    monedero=models.BooleanField(default=False)
     
     #utility fields
     date_created= models.DateTimeField(blank=True, null=True)
@@ -245,19 +265,25 @@ class devolutionItem(models.Model):
         total=round(total1,2)
         return total
 @receiver(post_save, sender=devolutionItem)
-def OrderItemSignal(sender,instance,**kwargs):
+def devolutionItemSignal(sender,instance,**kwargs):
     producto_id=instance.product.id
     producto=Product.objects.get(pk=producto_id)
     cantidad= float(producto.stock)+float(instance.quantity)
     producto.stock=cantidad
     producto.save()
+    clientId=instance.devolution.client.id
+    cliente=Client.objects.get(id=clientId)
+    cliente.monedero=float(cliente.monedero)-instance.get_total*0.035
+    cliente.save()
 
 @receiver(post_delete, sender=devolutionItem)
-def OrderItemSignal(sender,instance,**kwargs):
+def devolutionItemSignal(sender,instance,**kwargs):
     producto_id=instance.product.id
     producto=Product.objects.get(pk=producto_id)
     cantidad= float(producto.stock)-float(instance.quantity)
     producto.stock=cantidad
     producto.save()
-
-
+    clientId=instance.devolution.client.id
+    cliente=Client.objects.get(id=clientId)
+    cliente.monedero=float(cliente.monedero)+instance.get_total*0.035
+    cliente.save()

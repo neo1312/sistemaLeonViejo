@@ -3,6 +3,7 @@ window.onload=function(){
 	
 const btnOrder= document.getElementById('btnOrderList');
 const clientId= document.getElementById('clientId');
+const btnMonedero= document.getElementById('btnMonedero');
 
 //crear nueva orden
 btnOrder.addEventListener('click',(e)=>{
@@ -10,6 +11,7 @@ btnOrder.addEventListener('click',(e)=>{
 })
     const createOrder = ()=>{
 	let client=clientId.value
+	let monedero=btnMonedero.value
         let url = "/sale/inicia"
         fetch(url,{
             method:'POST',
@@ -17,7 +19,7 @@ btnOrder.addEventListener('click',(e)=>{
                 'Content-Type':'application/json',
                 'X-CSRFToken':csrftoken,
             },
-		body:JSON.stringify({'id':client})
+		body:JSON.stringify({'id':client,'monedero':monedero})
         })
             .then((response)=>{
                 return response.json();

@@ -131,10 +131,10 @@ def purchaseOrder(request,pk):
             content_type='text/csv',
             )
     writer = csv.writer(response)
-    writer.writerow(['Clave','Clave_Provedor','Descripcion','Cantidad','Costo','Total'])
+    writer.writerow(['unidad_empaque','Clave','Clave_Provedor','Descripcion','Cantidad','Costo'])
 
     for p in productFaltante:
-        writer.writerow([p.id,p.pv1,p.name,p.faltante,float(p.costo)*float(p.unidadEmpaque),' '])
+        writer.writerow([p.unidadEmpaque,p.id,p.pv1,p.name,p.faltante,float(p.costo)*float(p.unidadEmpaque)])
 
     response['Content-Disposition']='attachment; filename="productCost.csv"'
     return response

@@ -72,8 +72,11 @@ def devolutionCreate(request):
 @csrf_exempt
 def devolutionInicia(request):
     if request.method == "POST":
-        client=Client.objects.get(name='mostrador')
-        devolution=Devolution.objects.create(client=client)
+        call=json.loads(request.body)
+        clienteId=int(call['id'])
+        monedero=call['monedero']
+        client=Client.objects.get(id=clienteId)
+        devolution=Devolution.objects.create(client=client,monedero=monedero)
         devolution.save()
         return JsonResponse('devolucion Registrada',safe=False)
 
@@ -162,7 +165,7 @@ def devpdfPrint(request,pk):
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
-def devolutionNewBtn(request):
+def devolutionNew(request):
     data = {
 
             'devolution_create':'/devolution/create',
@@ -177,4 +180,4 @@ def devolutionNewBtn(request):
             'newBtn':'Devolucion',
             }
  
-    return render(request, 'devolution/newBtn.html', data)
+    return render(request, 'devolution/new.html', data)

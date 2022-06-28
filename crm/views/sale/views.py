@@ -15,8 +15,9 @@ def saleInicia(request):
     if request.method == "POST":
         call=json.loads(request.body)
         clienteId=int(call['id'])
+        monedero=call['monedero']
         cliente=Client.objects.get(id=clienteId)
-        sale=Sale.objects.create(client=cliente,)
+        sale=Sale.objects.create(client=cliente,monedero=monedero)
         sale.save()
     return JsonResponse('Venta Registrada',safe=False)
 
@@ -102,6 +103,10 @@ def saleItemView(request):
         quantity=data[1]
         product=Product.objects.get(id=pk)
         cost=product.costo
+        if sale.monedero == False:
+            monedero = 0
+        else:
+            monedero=sale.client.monedero
         if sale.tipo != 'menudeo':
             margen=product.margenMayoreo
         else:
@@ -123,10 +128,10 @@ def saleItemView(request):
                 repetido=outputlist[0]
                 quantity=int(repetido.quantity)+int(quantity)
                 saleItem.objects.filter(id=repetido.id).delete()
-                saleItem.objects.create(product=product,sale=sale,quantity=quantity,cost=cost,margen=margen)
+                saleItem.objects.create(product=product,sale=sale,quantity=quantity,cost=cost,margen=margen,monedero=monedero)
                 return JsonResponse('se sumaron',safe=False)
             else:
-                saleItem.objects.create(product=product,sale=sale,quantity=quantity,cost=cost,margen=margen)
+                saleItem.objects.create(product=product,sale=sale,quantity=quantity,cost=cost,margen=margen,monedero=monedero)
                 return JsonResponse('creo nuevo registro',safe=False)
 
 

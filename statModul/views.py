@@ -5,6 +5,7 @@ import datetime
 from crm.models import Sale,Devolution
 from functools import reduce
 from django.views.decorators.csrf import csrf_exempt
+from itertools import chain
 
 
 @csrf_exempt
@@ -42,8 +43,18 @@ def getData(request):
                 devolution_cost=list(map(lambda x:x.get_cart_total_cost,filtro))
                 total_devolution=reduce(lambda x,y:x+y,devolutions)
                 total_devolution_c=reduce(lambda x,y:x+y,devolution_cost)
-                
-        print(total_venta-total_devolution)
-        print(total_venta_c-total_devolution_c)
-        return JsonResponse({'date':date},safe=False)
+        monederoVenta=list(filter((lambda x:x.client.name !='mostrador'),filtro))
+        monederoTotal=list(map(lambda x:x.get_cart_total,monederoVenta))
+        monederoFinal=reduce(lambda x,y:x+y,monederoTotal)*0.035
 
+        monederoAplica=list(filter((lambda x:x.monedero == True),monederoVenta))
+        itemLista=list(map(lambda x:x.saleitem_set.all(),monederoAplica))
+        itemFinal=list(reduce(lambda x,y:x|y,itemLista))
+        test=list(map(lambda x: x.get_total if (x.get_total <= x.monedero) else x.monedero,itemFinal))
+        totalAplicado=reduce(lambda x,y:x+y,test)
+
+        print('Monedero Aplicado: ${}'.format(round(totalAplicado,2)))
+        print("Monedero Otorgado ${}".format(round(monederoFinal,2)))
+        print("total de venta:${}".format(total_venta-total_devolution))
+        print("total de costo de ventas:${}".format(total_venta_c-total_devolution_c))
+        return JsonResponse({'date':date},safe=False)
